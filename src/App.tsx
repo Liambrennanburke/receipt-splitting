@@ -1,7 +1,9 @@
+import { useState, useEffect } from 'react';
 import { useStore, StoreProvider } from './store';
 import { ReceiptUpload } from './components/ReceiptUpload';
 import { AssignView } from './components/AssignView';
 import { SplitSummary } from './components/SplitSummary';
+import { AdminDashboard } from './components/AdminDashboard';
 function ReceiptLogo({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 36 40" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
@@ -98,7 +100,23 @@ function AppContent() {
   );
 }
 
+function useHashRoute() {
+  const [hash, setHash] = useState(window.location.hash);
+  useEffect(() => {
+    const onHashChange = () => setHash(window.location.hash);
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+  return hash;
+}
+
 export default function App() {
+  const hash = useHashRoute();
+
+  if (hash === '#admin') {
+    return <AdminDashboard />;
+  }
+
   return (
     <StoreProvider>
       <AppContent />

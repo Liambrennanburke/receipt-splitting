@@ -25,6 +25,7 @@ interface State {
   tip: number;
   splitMode: SplitMode;
   receiptImage: string | null;
+  rawOcrText: string;
   ocrProgress: number;
   isProcessing: boolean;
   restaurantName: string;
@@ -48,6 +49,7 @@ type Action =
   | { type: 'SET_RECEIPT_IMAGE'; image: string | null }
   | { type: 'SET_OCR_PROGRESS'; progress: number }
   | { type: 'SET_PROCESSING'; isProcessing: boolean }
+  | { type: 'SET_RAW_OCR_TEXT'; text: string }
   | { type: 'SET_RESTAURANT_NAME'; name: string }
   | { type: 'SET_MEAL_DATE'; date: string }
   | { type: 'RESET' };
@@ -60,6 +62,7 @@ const initialState: State = {
   tip: 0,
   splitMode: 'proportional',
   receiptImage: null,
+  rawOcrText: '',
   ocrProgress: 0,
   isProcessing: false,
   restaurantName: '',
@@ -165,6 +168,8 @@ function reducer(state: State, action: Action): State {
       return { ...state, ocrProgress: action.progress };
     case 'SET_PROCESSING':
       return { ...state, isProcessing: action.isProcessing };
+    case 'SET_RAW_OCR_TEXT':
+      return { ...state, rawOcrText: action.text };
     case 'SET_RESTAURANT_NAME':
       return { ...state, restaurantName: action.name };
     case 'SET_MEAL_DATE':

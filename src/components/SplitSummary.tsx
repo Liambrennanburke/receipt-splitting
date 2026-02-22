@@ -1,11 +1,24 @@
 import { ArrowLeft, RotateCcw, Check, Copy, MapPin, CalendarDays } from 'lucide-react';
 import { useStore } from '../store';
 import { formatCurrency, getPersonTotal } from '../utils';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+
+async function saveSession(payload: Record<string, unknown>) {
+  try {
+    await fetch('/api/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    // fire-and-forget
+  }
+}
 
 export function SplitSummary() {
   const { state, dispatch } = useStore();
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const hasSaved = useRef(false);
 
   const subtotal = state.items.reduce((sum, i) => sum + i.price, 0);
   const grandTotal = subtotal + state.tax + state.tip;
@@ -23,6 +36,31 @@ export function SplitSummary() {
   }));
 
   const accounted = personTotals.reduce((sum, pt) => sum + pt.total, 0);
+
+  useEffect(() => {
+    if (hasSaved.current) return;
+    hasSaved.current = true;
+
+    saveSession({
+      restaurantName: state.restaurantName,
+      mealDate: state.mealDate,
+      rawOcrText: state.rawOcrText,
+      receiptImage: state.receiptImage,
+      items: state.items,
+      people: state.people,
+      tax: state.tax,
+      tip: state.tip,
+      splitMode: state.splitMode,
+      personTotals: personTotals.map((pt) => ({
+        name: pt.person.name,
+        itemsTotal: pt.itemsTotal,
+        taxShare: pt.taxShare,
+        tipShare: pt.tipShare,
+        total: pt.total,
+      })),
+      grandTotal,
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const copyToClipboard = (person: typeof personTotals[0]) => {
     const header = [

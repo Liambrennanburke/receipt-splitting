@@ -7,6 +7,7 @@ export interface OcrResult {
   tip: number;
   restaurantName: string;
   mealDate: string;
+  rawText: string;
 }
 
 export async function parseReceipt(
@@ -22,7 +23,7 @@ export async function parseReceipt(
   });
 
   const text = result.data.text;
-  return extractItemsFromText(text);
+  return { ...extractItemsFromText(text), rawText: text };
 }
 
 function normalize(s: string): string {
@@ -65,7 +66,7 @@ function isNonItemLine(line: string): boolean {
   return patterns.some((p) => p.test(n));
 }
 
-function extractItemsFromText(text: string): OcrResult {
+function extractItemsFromText(text: string): Omit<OcrResult, 'rawText'> {
   const lines = text.split('\n').filter((l) => l.trim().length > 0);
   const items: ReceiptItem[] = [];
   let tax = 0;

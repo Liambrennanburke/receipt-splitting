@@ -49,13 +49,14 @@ export function ReceiptUpload() {
         };
         reader.readAsDataURL(imageFile);
 
-        const { items, tax, tip, restaurantName, mealDate } = await parseReceipt(imageFile, (progress) => {
+        const { items, tax, tip, restaurantName, mealDate, rawText } = await parseReceipt(imageFile, (progress) => {
           dispatch({ type: 'SET_OCR_PROGRESS', progress });
         });
 
         dispatch({ type: 'SET_ITEMS', items });
         dispatch({ type: 'SET_TAX', tax });
         dispatch({ type: 'SET_TIP', tip });
+        dispatch({ type: 'SET_RAW_OCR_TEXT', text: rawText });
         if (restaurantName) dispatch({ type: 'SET_RESTAURANT_NAME', name: restaurantName });
         if (mealDate) dispatch({ type: 'SET_MEAL_DATE', date: mealDate });
         dispatch({ type: 'SET_PROCESSING', isProcessing: false });
