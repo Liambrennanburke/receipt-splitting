@@ -3,6 +3,26 @@ import { Upload, FileText, Loader2, AlertTriangle, RotateCcw } from 'lucide-reac
 import { useStore } from '../store';
 import { parseReceipt, NotAReceiptError } from '../ocr';
 
+function isHeic(file: File): boolean {
+  const name = file.name.toLowerCase();
+  return (
+    name.endsWith('.heic') ||
+    name.endsWith('.heif') ||
+    file.type === 'image/heic' ||
+    file.type === 'image/heif'
+  );
+}
+
+async function ensureJpeg(file: File): Promise<File> {
+  if (!isHeic(file)) return file;
+  const { default: heic2any } = await import('heic2any');
+  const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+  const result = Array.isArray(blob) ? blob[0] : blob;
+  return new File([result], file.name.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg'), {
+    type: 'image/jpeg',
+  });
+}
+
 export function ReceiptUpload() {
   const { state, dispatch } = useStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -11,24 +31,25 @@ export function ReceiptUpload() {
 
   const handleFile = useCallback(
     async (file: File) => {
-      if (!file.type.startsWith('image/')) {
-        setError('Please upload an image file (JPEG, PNG, etc.).');
+      if (!file.type.startsWith('image/') && !isHeic(file)) {
+        setError('Please upload an image file (JPEG, PNG, HEIC, etc.).');
         return;
       }
 
       setError(null);
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        dispatch({ type: 'SET_RECEIPT_IMAGE', image: e.target?.result as string });
-      };
-      reader.readAsDataURL(file);
-
       dispatch({ type: 'SET_PROCESSING', isProcessing: true });
       dispatch({ type: 'SET_OCR_PROGRESS', progress: 0 });
 
       try {
-        const { items, tax, tip, restaurantName, mealDate } = await parseReceipt(file, (progress) => {
+        const imageFile = await ensureJpeg(file);
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          dispatch({ type: 'SET_RECEIPT_IMAGE', image: e.target?.result as string });
+        };
+        reader.readAsDataURL(imageFile);
+
+        const { items, tax, tip, restaurantName, mealDate } = await parseReceipt(imageFile, (progress) => {
           dispatch({ type: 'SET_OCR_PROGRESS', progress });
         });
 
@@ -128,7 +149,7 @@ export function ReceiptUpload() {
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,.heic,.heif"
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
